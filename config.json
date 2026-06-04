@@ -1,0 +1,29 @@
+{
+  "$comment": "Central benchmark config. The SAME values are used on every target: VMs already have these specs; the Windows host run is CAPPED to them via Job Objects so the bare-metal baseline is fair. Both run.sh and run.ps1 read this file.",
+
+  "vm_spec": {
+    "_note": "Control variables. Allocate exactly this in VirtualBox and Hyper-V, and cap the host run to it.",
+    "vcpus": 4,
+    "memory_mb": 8192
+  },
+
+  "run": {
+    "repetitions": 7,
+    "warmup_runs": 2,
+    "results_dir": "results"
+  },
+
+  "workloads": {
+    "cpu":  { "enabled": true, "tool": "7z",     "_note": "7-Zip 'b' benchmark (MIPS). Cross-platform, deterministic." },
+    "mem":  { "enabled": true, "tool": "sysbench","_note": "sysbench memory on Linux; 7z dictionary throughput on Windows (see DESIGN: not strictly comparable)." },
+    "disk": { "enabled": true, "tool": "fio",     "sizes": ["4k", "64k", "1m"], "patterns": ["randread", "randwrite", "read", "write"], "iodepth": 32, "runtime_s": 30, "file_size": "4G" },
+    "net":  { "enabled": true, "tool": "iperf3",  "server": "10.0.0.2", "duration_s": 30, "_server_note": "A SEPARATE physical box on the same LAN running 'iperf3 -s'. Not the host itself." },
+    "app":  { "enabled": true, "tool": "7z",      "_note": "Application-level: large 7z compress of a fixed corpus. Real builds tools (kernel compile) are Linux-only; kept optional." }
+  },
+
+  "git": {
+    "_note": "Runner PRINTS these commands after a run; it does not push automatically.",
+    "branch": "main",
+    "remote": "origin"
+  }
+}
