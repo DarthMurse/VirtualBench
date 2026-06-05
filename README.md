@@ -37,8 +37,22 @@ discarded. The **network test needs a separate physical box** on the LAN running
 make deps          # apt-get install sysbench fio iperf3 p7zip-full jq bc   (needs sudo)
 ```
 
-**Windows host:** install [7-Zip](https://www.7-zip.org/), [fio](https://github.com/axboe/fio),
-and [iperf3](https://iperf.fr/) and put them on `PATH`. Python 3 (for analysis) via `uv`.
+**Windows host:** install the three benchmark tools with `winget` (or download them and add
+each to `PATH`):
+
+```powershell
+winget install --exact --id 7zip.7zip
+winget install --exact --id fio.fio
+winget install --exact --id ar51an.iPerf3
+```
+
+7-Zip does **not** add itself to `PATH`; append `C:\Program Files\7-Zip` to your User or
+Machine `Path` (or copy `7z.exe` somewhere already on `PATH`). After installing, open a new
+shell so the updated `PATH` is picked up, then verify: `7z`, `fio`, and `iperf3` all resolve.
+Analysis uses Python 3 via `uv` (run it from WSL or any box with Python).
+
+The runner records any missing tool as `skipped` rather than failing, so a partial toolset
+still produces a valid result file.
 
 ## Run
 
@@ -46,17 +60,44 @@ and [iperf3](https://iperf.fr/) and put them on `PATH`. Python 3 (for analysis) 
 # Linux guest
 scripts/run_linux.sh --label virtualbox --config config.json
 scripts/run_linux.sh --label hyperv     --config config.json
+```
 
-# Windows host (PowerShell, elevated for the resource cap)
-scripts\run_windows.ps1 -Label host-baseline -Config config.json
+```powershell
+# Windows host — run from an ELEVATED PowerShell, with a LOCAL working directory.
+cd C:\
+& 'C:\path\to\VirtualBench\scripts\run_windows.ps1' -Label host-baseline -Config 'C:\path\to\VirtualBench\config.json'
 # or: scripts\run_windows.bat -Label host-baseline
+```
 
-# Aggregate
+```bash
+# Aggregate (from WSL or any box with Python 3)
 python3 analyze/analyze.py results
 ```
 
 Edit `config.json` to set `vm_spec` (vcpus/memory_mb), `run` (repetitions/warmup), and the
 per-workload parameters. `config.smoke.json` holds tiny values for a quick `make smoke` check.
+
+### Windows runner notes
+
+- **Run elevated.** Applying the Job-Object resource cap requires administrator rights; without
+  it the cap is skipped and the result records `"capped": false`.
+- **Use a local working directory.** 7-Zip's benchmark fails when the process current directory
+  is a UNC path (e.g. a `\\wsl.localhost\...` checkout). The script pins its own cwd to a local
+  drive, but launch it from a local path (`cd C:\`) to be safe. Disk/app I/O is written to a
+  local scratch dir (`%TEMP%`) when the repo lives on a network/9p share, so the disk numbers
+  reflect the host SSD rather than the share.
+- **CPU cap method.** CPU is limited with a Job-Object *CPU-rate hard cap* (`vcpus / total
+  cores`), **not** a core-affinity mask: benchmark tools (7-Zip, fio) pin their own threads and
+  abort if affinity is externally restricted. The rate cap throttles total cycles for the same
+  "fewer vCPUs" effect. Compare against the Linux runner with this difference in mind.
+- **Memory bandwidth is `skipped`.** sysbench has no native Windows port and there is no built-in
+  equivalent, so the `mem` metrics are recorded as `skipped`. For a real figure use a standalone
+  tool such as Intel MLC (`mlc --max_bandwidth`, free) or AIDA64, and convert MB/s → MiB/s
+  (÷1.048576) to compare with the Linux sysbench numbers.
+- **Network needs a server.** The `net` workload connects to `workloads.net.server`. Run an
+  `iperf3 -s` server **on a separate physical machine** on the LAN (open inbound TCP 5201 in the
+  firewall) and set its IP in `config.json`. Without a reachable server, throughput/retransmits
+  record `skipped` (RTT still works if the host answers ping).
 
 ## Layout
 

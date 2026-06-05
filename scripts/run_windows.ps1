@@ -25,6 +25,15 @@ if (-not $Reps) { $Reps = [int]$cfg.run.repetitions }
 $warmup  = [int]$cfg.run.warmup_runs
 $resDir  = Join-Path $Repo $cfg.run.results_dir
 
+# Disk/app I/O must hit a real local volume to measure the host disk. When the repo lives on
+# a UNC/9p share (e.g. a WSL checkout), fall back to a local TEMP scratch dir for fio/7z work.
+$Scratch = if ($Repo -match '^[A-Za-z]:\\') { $Repo } else { $env:TEMP }
+
+# Native tools (7-Zip's `b`) error out when the process current directory is a UNC path.
+# Pin the process cwd to a local drive; all paths used below are absolute, so this is safe.
+[Environment]::CurrentDirectory = $Scratch
+Set-Location $Scratch
+
 function Have($name) { return [bool](Get-Command $name -ErrorAction SilentlyContinue) }
 
 # --- result file ----------------------------------------------------------
@@ -61,11 +70,19 @@ function Emit($workload,$metric,$value,$unit,$params) {
 Write-Host "==> VirtualBench windows | label=$Label vcpus=$vcpus reps=$Reps warmup=$warmup"
 $result.meta.capped = (Set-ResourceCap -Vcpus $vcpus -MemoryMb $memMb)
 
+# Native benchmark tools (7z/fio/iperf3) write to stderr; with ErrorActionPreference="Stop"
+# that stderr is promoted to a terminating error. Switch to Continue so the per-workload
+# "skipped"/output checks below handle failures gracefully instead of aborting the run.
+$ErrorActionPreference = "Continue"
+
 # --- workloads ------------------------------------------------------------
 function Invoke-Cpu($sink) {
   $p = @{ threads = $vcpus }
   if (-not (Have "7z")) { & $sink "cpu" "7z_total_mips" "skipped" "MIPS" $p; return }
-  $out  = & 7z b -mmt$vcpus 2>$null
+  # NB: the arg MUST be quoted. PowerShell passes a bareword like -mmt$vcpus to a native
+  # exe literally (no variable expansion for dash-prefixed tokens), so 7z would receive
+  # "-mmt$vcpus" and fail with "parameter is incorrect". Quoting forces expansion.
+  $out  = & 7z b "-mmt$vcpus" 2>$null
   $tot  = $out | Select-String '^Tot:' | Select-Object -First 1
   if ($tot) { & $sink "cpu" "7z_total_mips" (($tot -split '\s+')[-1]) "MIPS" $p }
   else      { & $sink "cpu" "7z_total_mips" "skipped" "MIPS" $p }
@@ -79,7 +96,10 @@ function Invoke-Mem($sink) {
 
 function Invoke-Disk($sink) {
   $d = $cfg.workloads.disk
-  $testdir = Join-Path $Repo "fio_testdir"
+  $testdir = Join-Path $Scratch "fio_testdir"
+  # fio parses ':' in --directory as a path separator, so a Windows drive letter must be
+  # escaped (C:\x -> C\:\x). UNC paths have no drive-letter colon and pass through unchanged.
+  $fioDir  = $testdir -replace '^([A-Za-z]):', '$1\:'
   $haveFio = Have "fio"
   if ($haveFio) { New-Item -ItemType Directory -Force -Path $testdir | Out-Null }
   foreach ($bs in $d.sizes) { foreach ($pat in $d.patterns) {
@@ -90,11 +110,14 @@ function Invoke-Disk($sink) {
       & $sink "disk" "latency_avg" "skipped" "us" $p
       continue
     }
-    $json = & fio --name=vbench --directory="$testdir" --rw=$pat --bs=$bs `
+    $json = & fio --name=vbench --directory="$fioDir" --rw=$pat --bs=$bs `
                   --iodepth=$($d.iodepth) --size=$($d.file_size) --runtime=$($d.runtime_s) --time_based `
-                  --ioengine=windowsaio --direct=1 --group_reporting --output-format=json 2>$null | Out-String
-    if ($json) {
-      $j  = $json | ConvertFrom-Json
+                  --ioengine=windowsaio --direct=1 --thread --group_reporting --output-format=json 2>$null | Out-String
+    # fio may print warnings to stdout before the JSON (e.g. the shared-mutex notice), so
+    # parse from the first '{' rather than feeding the whole string to ConvertFrom-Json.
+    $start = if ($json) { $json.IndexOf('{') } else { -1 }
+    if ($start -ge 0) {
+      $j  = $json.Substring($start) | ConvertFrom-Json
       $job = $j.jobs[0]
       $rec = if ($job.read.iops -gt 0) { $job.read } else { $job.write }
       & $sink "disk" "iops" $rec.iops "IOPS" $p
@@ -140,7 +163,7 @@ function Invoke-App($sink) {
   $a = $cfg.workloads.app
   $p = @{ threads=$vcpus; level=[int]$a.level; corpus_mb=[int]$a.corpus_mb }
   if (-not (Have "7z")) { & $sink "app" "7z_compress_time" "skipped" "s" $p; return }
-  $work = Join-Path $Repo "app_testdir"
+  $work = Join-Path $Scratch "app_testdir"
   New-Item -ItemType Directory -Force -Path $work | Out-Null
   try {
     $halfMb = [int]($a.corpus_mb/2)
@@ -149,8 +172,12 @@ function Invoke-App($sink) {
     $fs = [IO.File]::OpenWrite($blob); for ($i=0;$i -lt $halfMb;$i++){ $fs.Write($buf,0,$buf.Length) }; $fs.Close()
     $line = ("the quick brown fox jumps over the lazy dog`n") * 20000
     $sw = [IO.StreamWriter]::new($text); for ($i=0;$i -lt $halfMb;$i++){ $sw.Write($line) }; $sw.Close()
-    $t = Measure-Command { & 7z a -mmt$vcpus -mx$($a.level) (Join-Path $work "out.7z") $blob $text 2>$null | Out-Null }
-    & $sink "app" "7z_compress_time" ([math]::Round($t.TotalSeconds,3)) "s" $p
+    # Quote the switches so PowerShell expands $vcpus/$a.level (see note in Invoke-Cpu).
+    $archive = Join-Path $work "out.7z"
+    $t = Measure-Command { & 7z a "-mmt$vcpus" "-mx$($a.level)" $archive $blob $text 2>$null | Out-Null }
+    # Only record a time if the archive was actually produced; otherwise the compression failed.
+    if (Test-Path $archive) { & $sink "app" "7z_compress_time" ([math]::Round($t.TotalSeconds,3)) "s" $p }
+    else                    { & $sink "app" "7z_compress_time" "skipped" "s" $p }
   } finally { Remove-Item -Recurse -Force $work -ErrorAction SilentlyContinue }
 }
 
@@ -167,6 +194,9 @@ $discard = { param($w,$m,$v,$u,$p) }
 for ($i=1; $i -le $warmup; $i++) { Write-Host "--- warmup $i/$warmup ---"; Run-All $discard }
 for ($i=1; $i -le $Reps;   $i++) { Write-Host "--- rep $i/$Reps ---";     Run-All ${function:Emit} }
 
-$result | ConvertTo-Json -Depth 8 | Set-Content -Path $resultFile -Encoding UTF8
+# Write UTF-8 WITHOUT a BOM. PowerShell 5.1's `Set-Content -Encoding UTF8` prepends a BOM,
+# which trips the stdlib JSON reader in analyze.py (json.load can't skip a BOM).
+$json = $result | ConvertTo-Json -Depth 8
+[IO.File]::WriteAllText($resultFile, $json, (New-Object System.Text.UTF8Encoding($false)))
 Write-Host "==> done. results in $resultFile"
 Write-Host "==> analyze with: python3 analyze/analyze.py results"

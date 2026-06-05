@@ -30,7 +30,8 @@ def load(results_dir):
     data = defaultdict(lambda: defaultdict(list))
     for path in sorted(glob.glob(os.path.join(results_dir, "*", "result_*.json"))):
         try:
-            with open(path) as fh:
+            # utf-8-sig tolerates a leading BOM (the Windows runner used to emit one).
+            with open(path, encoding="utf-8-sig") as fh:
                 doc = json.load(fh)
         except (OSError, json.JSONDecodeError) as exc:
             print(f"warning: skipping {path}: {exc}", file=sys.stderr)
