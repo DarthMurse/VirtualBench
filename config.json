@@ -14,7 +14,7 @@
     "disk": {
       "enabled": true,
       "tool": "fio",
-      "sizes": ["4k", "64k"],
+      "sizes": ["4k"],
       "patterns": ["randread", "randwrite", "read", "write"],
       "iodepth": 32,
       "runtime_s": 30,
