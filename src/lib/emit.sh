@@ -6,7 +6,10 @@
 #   otherwise as a string (e.g. "skipped").
 
 emit_metric() {
-  local file="$1" workload="$2" metric="$3" value="$4" unit="$5" params="${6:-{}}"
+  local file="$1" workload="$2" metric="$3" value="$4" unit="$5" params="${6:-}"
+  # default to an empty object; done separately because ${6:-{}} mis-parses the
+  # brace default (bash appends a stray '}'), corrupting the JSON.
+  [[ -n "$params" ]] || params='{}'
   local tmp
   tmp="$(mktemp)"
   jq \

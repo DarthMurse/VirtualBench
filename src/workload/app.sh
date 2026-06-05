@@ -25,7 +25,9 @@ trap 'rm -rf "$workdir"' EXIT
 half=$(( corpus_mb / 2 ))
 vlog "app: building ${corpus_mb} MiB corpus (${half} MiB random + ${half} MiB text)"
 dd if=/dev/urandom of="$workdir/blob.bin" bs=1M count="$half" status=none
-yes "the quick brown fox jumps over the lazy dog" | head -c "$(( half * 1024 * 1024 ))" > "$workdir/text.txt"
+# `yes` is killed by SIGPIPE once `head` has read enough; that's expected, so swallow
+# the resulting pipeline failure (pipefail + set -e would otherwise abort the run).
+{ yes "the quick brown fox jumps over the lazy dog" | head -c "$(( half * 1024 * 1024 ))" > "$workdir/text.txt"; } || true
 
 vlog "app: 7z a -mmt$vcpus -mx$level"
 start="$(date +%s.%N)"
