@@ -1,0 +1,452 @@
+{
+  "meta": {
+    "label": "wsl",
+    "timestamp": "20260605T023947Z",
+    "hostname": "Murse",
+    "os": "Ubuntu 26.04 LTS",
+    "kernel": "Linux 6.6.114.1-microsoft-standard-WSL2",
+    "allocated_vcpus": 4,
+    "visible_nproc": 12,
+    "total_mem_mb": 15839,
+    "repetitions": 7,
+    "runner": "linux",
+    "capped": false
+  },
+  "metrics": [
+    {
+      "workload": "cpu",
+      "metric": "7z_total_mips",
+      "value": 27376,
+      "unit": "MIPS",
+      "params": {
+        "threads": 4
+      }
+    },
+    {
+      "workload": "mem",
+      "metric": "sysbench_read_MiBps",
+      "value": 142992.34,
+      "unit": "MiB/s",
+      "params": {
+        "threads": 4,
+        "block": "1M",
+        "total": "4G"
+      }
+    },
+    {
+      "workload": "mem",
+      "metric": "sysbench_write_MiBps",
+      "value": 66580.96,
+      "unit": "MiB/s",
+      "params": {
+        "threads": 4,
+        "block": "1M",
+        "total": "4G"
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "iops",
+      "value": 109830.505650,
+      "unit": "IOPS",
+      "params": {
+        "bs": "4k",
+        "pattern": "randread",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "bandwidth",
+      "value": 439322,
+      "unit": "KiB/s",
+      "params": {
+        "bs": "4k",
+        "pattern": "randread",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "latency_avg",
+      "value": 291.03,
+      "unit": "us",
+      "params": {
+        "bs": "4k",
+        "pattern": "randread",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "iops",
+      "value": 88086.830439,
+      "unit": "IOPS",
+      "params": {
+        "bs": "4k",
+        "pattern": "randwrite",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "bandwidth",
+      "value": 352347,
+      "unit": "KiB/s",
+      "params": {
+        "bs": "4k",
+        "pattern": "randwrite",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "latency_avg",
+      "value": 362.92,
+      "unit": "us",
+      "params": {
+        "bs": "4k",
+        "pattern": "randwrite",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "iops",
+      "value": 71982.500583,
+      "unit": "IOPS",
+      "params": {
+        "bs": "4k",
+        "pattern": "read",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "bandwidth",
+      "value": 287930,
+      "unit": "KiB/s",
+      "params": {
+        "bs": "4k",
+        "pattern": "read",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "latency_avg",
+      "value": 444.20,
+      "unit": "us",
+      "params": {
+        "bs": "4k",
+        "pattern": "read",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "iops",
+      "value": 91706.676444,
+      "unit": "IOPS",
+      "params": {
+        "bs": "4k",
+        "pattern": "write",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "bandwidth",
+      "value": 366826,
+      "unit": "KiB/s",
+      "params": {
+        "bs": "4k",
+        "pattern": "write",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "latency_avg",
+      "value": 348.65,
+      "unit": "us",
+      "params": {
+        "bs": "4k",
+        "pattern": "write",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "iops",
+      "value": 31802.873238,
+      "unit": "IOPS",
+      "params": {
+        "bs": "64k",
+        "pattern": "randread",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "bandwidth",
+      "value": 2035383,
+      "unit": "KiB/s",
+      "params": {
+        "bs": "64k",
+        "pattern": "randread",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "latency_avg",
+      "value": 1005.50,
+      "unit": "us",
+      "params": {
+        "bs": "64k",
+        "pattern": "randread",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "iops",
+      "value": 23220.218652,
+      "unit": "IOPS",
+      "params": {
+        "bs": "64k",
+        "pattern": "randwrite",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "bandwidth",
+      "value": 1486093,
+      "unit": "KiB/s",
+      "params": {
+        "bs": "64k",
+        "pattern": "randwrite",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "latency_avg",
+      "value": 1377.35,
+      "unit": "us",
+      "params": {
+        "bs": "64k",
+        "pattern": "randwrite",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "iops",
+      "value": 18975.801613,
+      "unit": "IOPS",
+      "params": {
+        "bs": "64k",
+        "pattern": "read",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "bandwidth",
+      "value": 1214451,
+      "unit": "KiB/s",
+      "params": {
+        "bs": "64k",
+        "pattern": "read",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "latency_avg",
+      "value": 1685.73,
+      "unit": "us",
+      "params": {
+        "bs": "64k",
+        "pattern": "read",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "iops",
+      "value": 28685.443819,
+      "unit": "IOPS",
+      "params": {
+        "bs": "64k",
+        "pattern": "write",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "bandwidth",
+      "value": 1835868,
+      "unit": "KiB/s",
+      "params": {
+        "bs": "64k",
+        "pattern": "write",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "latency_avg",
+      "value": 1114.92,
+      "unit": "us",
+      "params": {
+        "bs": "64k",
+        "pattern": "write",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "net",
+      "metric": "throughput",
+      "value": 17656.52,
+      "unit": "Mbit/s",
+      "params": {
+        "server": "127.0.0.1",
+        "duration_s": 30,
+        "proto": "tcp"
+      }
+    },
+    {
+      "workload": "net",
+      "metric": "retransmits",
+      "value": 0,
+      "unit": "count",
+      "params": {
+        "server": "127.0.0.1",
+        "duration_s": 30,
+        "proto": "tcp"
+      }
+    },
+    {
+      "workload": "net",
+      "metric": "rtt_avg",
+      "value": 0.068,
+      "unit": "ms",
+      "params": {
+        "server": "127.0.0.1",
+        "count": 20
+      }
+    },
+    {
+      "workload": "app",
+      "metric": "7z_compress_time",
+      "value": 21.589,
+      "unit": "s",
+      "params": {
+        "threads": 4,
+        "level": 5,
+        "corpus_mb": 1024
+      }
+    },
+    {
+      "workload": "cpu",
+      "metric": "7z_total_mips",
+      "value": 27995,
+      "unit": "MIPS",
+      "params": {
+        "threads": 4
+      }
+    },
+    {
+      "workload": "mem",
+      "metric": "sysbench_read_MiBps",
+      "value": 153698.35,
+      "unit": "MiB/s",
+      "params": {
+        "threads": 4,
+        "block": "1M",
+        "total": "4G"
+      }
+    },
+    {
+      "workload": "mem",
+      "metric": "sysbench_write_MiBps",
+      "value": 60383.52,
+      "unit": "MiB/s",
+      "params": {
+        "threads": 4,
+        "block": "1M",
+        "total": "4G"
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "iops",
+      "value": 108195.860138,
+      "unit": "IOPS",
+      "params": {
+        "bs": "4k",
+        "pattern": "randread",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "bandwidth",
+      "value": 432783,
+      "unit": "KiB/s",
+      "params": {
+        "bs": "4k",
+        "pattern": "randread",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "latency_avg",
+      "value": 295.42,
+      "unit": "us",
+      "params": {
+        "bs": "4k",
+        "pattern": "randread",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "iops",
+      "value": 86729.809006,
+      "unit": "IOPS",
+      "params": {
+        "bs": "4k",
+        "pattern": "randwrite",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "bandwidth",
+      "value": 346919,
+      "unit": "KiB/s",
+      "params": {
+        "bs": "4k",
+        "pattern": "randwrite",
+        "iodepth": 32
+      }
+    },
+    {
+      "workload": "disk",
+      "metric": "latency_avg",
+      "value": 368.59,
+      "unit": "us",
+      "params": {
+        "bs": "4k",
+        "pattern": "randwrite",
+        "iodepth": 32
+      }
+    }
+  ]
+}

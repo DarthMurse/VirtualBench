@@ -14,7 +14,7 @@
     "disk": {
       "enabled": true,
       "tool": "fio",
-      "sizes": ["4k", "64k", "1m"],
+      "sizes": ["4k", "64k"],
       "patterns": ["randread", "randwrite", "read", "write"],
       "iodepth": 32,
       "runtime_s": 30,
@@ -23,7 +23,7 @@
     "net": {
       "enabled": true,
       "tool": "iperf3",
-      "server": "10.0.0.2",
+      "server": "127.0.0.1",
       "duration_s": 30,
       "ping_count": 20
     },
