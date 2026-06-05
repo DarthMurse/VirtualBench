@@ -79,7 +79,6 @@ def main():
             if base_med and label != baseline:
                 line += f"   ({med / base_med * 100:.1f}% of baseline)"
             print(line)
-        print()
     return 0
 
 
