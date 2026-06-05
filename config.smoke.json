@@ -1,0 +1,32 @@
+{
+  "vm_spec": {
+    "vcpus": 2,
+    "memory_mb": 2048
+  },
+  "run": {
+    "repetitions": 1,
+    "warmup_runs": 0,
+    "results_dir": "results"
+  },
+  "workloads": {
+    "cpu":  { "enabled": true, "tool": "7z" },
+    "mem":  { "enabled": true, "tool": "sysbench", "block_size": "1M", "total_size": "512M" },
+    "disk": {
+      "enabled": true,
+      "tool": "fio",
+      "sizes": ["4k"],
+      "patterns": ["randread"],
+      "iodepth": 8,
+      "runtime_s": 2,
+      "file_size": "256M"
+    },
+    "net": {
+      "enabled": true,
+      "tool": "iperf3",
+      "server": "127.0.0.1",
+      "duration_s": 2,
+      "ping_count": 3
+    },
+    "app":  { "enabled": true, "tool": "7z", "level": 1, "corpus_mb": 64 }
+  }
+}

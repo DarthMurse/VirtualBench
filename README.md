@@ -1,58 +1,71 @@
 # VirtualBench
 
-Benchmark and compare the performance of different **VM hypervisors** running the
-same workloads on the same physical host and the same guest OS.
+Benchmark the performance overhead of **VirtualBox** and **Hyper-V** Ubuntu VMs against
+a **Windows host** baseline, under identical hardware resources. Each target runs the same
+five workloads with standard, cross-platform tools and emits a self-describing JSON result;
+`analyze.py` aggregates them into a median + CV comparison table.
 
-The independent variable is the **hypervisor**. Everything else — host hardware,
-guest image, vCPU/RAM allocation, and the workload binaries — is held constant so
-measured differences are attributable to the virtualization software alone.
+| Workload | Tool (Linux / Windows) | Metrics |
+|----------|------------------------|---------|
+| CPU      | `7z b` / `7z b`        | total rating (MIPS) |
+| Memory   | `sysbench memory` / *(no Windows equivalent — skipped)* | read/write bandwidth (MiB/s) |
+| Disk     | `fio` (libaio / windowsaio) | IOPS, bandwidth (KiB/s), avg latency (us) |
+| Network  | `iperf3` + `ping`      | throughput (Mbit/s), retransmits, avg RTT (ms) |
+| App (e2e)| `7z a` timed           | compression time (s) |
 
-First targets: **VirtualBox** and **Hyper-V**, with a **Linux guest**, plus an
-optional **capped Windows host** baseline. There is no central orchestrator: you
-run the benchmark **manually on each machine**, and each machine commits its own
-results to git.
+## ⚠️ Fairness caveat: VirtualBox and Hyper-V cannot both run natively at once
 
-## How it works
+Enabling Hyper-V turns Windows into a hypervisor root partition, so the "host" is no longer
+bare metal, and VirtualBox falls back to a slower nested backend. Measure across **two boot
+configurations** and record which one each result came from:
 
+| Boot config | `bcdedit /set hypervisorlaunchtype` | Measure |
+|-------------|-------------------------------------|---------|
+| A | `off` (reboot) | bare-metal Windows host baseline + **VirtualBox (native)** |
+| B | `auto` (reboot) | **Hyper-V VM (native)** + optional VirtualBox-under-Hyper-V (coexistence penalty) |
+
+Additional controls: identical vCPU/RAM on both VMs (disable dynamic memory/ballooning),
+same virtual-disk type on the same SSD, Hyper-V Gen 2 + paravirtual drivers, record Guest
+Additions / Integration Services versions, High Performance power plan, >=5 reps with warmup
+discarded. The **network test needs a separate physical box** on the LAN running `iperf3 -s`
+(set its IP in `config.json` -> `workloads.net.server`).
+
+## Setup
+
+**Linux (each Ubuntu guest, or a bare-metal Linux baseline):**
+```bash
+make deps          # apt-get install sysbench fio iperf3 p7zip-full jq bc   (needs sudo)
 ```
-1. Copy this repo onto a target machine.
-2. Run the benchmark with a label:
-     Linux guest :  ./benchmark/run.sh  --label virtualbox      (or hyperv)
-     Windows host:  .\benchmark\run.ps1 -Label host-baseline    (auto-capped to VM specs)
-3. Results land in   results/<label>/result_<UTCstamp>.json
-4. The runner PRINTS the git commands — run them to publish that machine's results.
-5. After every machine has pushed:
-     python analyze/analyze.py results
+
+**Windows host:** install [7-Zip](https://www.7-zip.org/), [fio](https://github.com/axboe/fio),
+and [iperf3](https://iperf.fr/) and put them on `PATH`. Python 3 (for analysis) via `uv`.
+
+## Run
+
+```bash
+# Linux guest
+scripts/run_linux.sh --label virtualbox --config config.json
+scripts/run_linux.sh --label hyperv     --config config.json
+
+# Windows host (PowerShell, elevated for the resource cap)
+scripts\run_windows.ps1 -Label host-baseline -Config config.json
+# or: scripts\run_windows.bat -Label host-baseline
+
+# Aggregate
+python3 analyze/analyze.py results
 ```
 
-The Windows host run caps itself (CPU affinity + memory) to the same `vm_spec` as
-the VMs via a Windows Job Object, so the bare-metal baseline is a fair reference.
+Edit `config.json` to set `vm_spec` (vcpus/memory_mb), `run` (repetitions/warmup), and the
+per-workload parameters. `config.smoke.json` holds tiny values for a quick `make smoke` check.
 
 ## Layout
 
 ```
-config.json              # vm_spec (vcpus/mem), workload params, repetitions
-benchmark/               # the self-contained payload — copied to each machine
-  run.sh                 # Linux guest runner
-  run.ps1                # Windows host runner (resource-capped baseline)
-  restrict.ps1           # Job Object CPU+RAM cap used by run.ps1
-  lib/emit.sh            # JSON result helpers
-  bench/{cpu,mem,disk,net,app}.sh
-analyze/analyze.py       # aggregate results across machines, compute overhead %
-results/<label>/         # per-machine result JSON, committed to git
-docs/DESIGN.md           # methodology, fairness rules, result schema
+config.json / config.smoke.json   benchmark parameters
+scripts/run_linux.sh              Linux runner (warmup + measured reps)
+scripts/run_windows.ps1 (+ .bat)  Windows host runner (Job-Object resource cap)
+src/{cpu,memory,disk,network,workload}/   per-workload modules
+src/lib/emit.sh, src/lib/restrict.ps1     metric emitter / resource capper
+analyze/analyze.py                median + CV + %-of-baseline aggregator
+results/<label>/result_*.json     committed results
 ```
-
-## Prerequisites
-
-- **Linux guests:** `sudo apt-get install -y p7zip-full sysbench fio iperf3 jq bc`
-- **Windows host:** `7z.exe`, `fio` (Windows build), `iperf3` (Windows build) on PATH; run PowerShell as admin.
-- **Network workload:** a separate physical box on the LAN running `iperf3 -s`
-  (set its IP in `config.json` → `workloads.net.server`).
-
-See [docs/DESIGN.md](docs/DESIGN.md) for the full methodology, the
-host-vs-guest comparability caveat, and the result schema.
-
-> Status: scaffold. The runners and bench scripts are complete; you still need to
-> create the VMs, install a Linux guest image, and (for fairness) the matching
-> paravirtual guest tools on both hypervisors.

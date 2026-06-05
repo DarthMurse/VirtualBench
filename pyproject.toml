@@ -1,5 +1,9 @@
 [project]
 name = "virtualbench"
 version = "0.1.0"
+description = "Benchmark VirtualBox vs Hyper-V VMs against a Windows host baseline"
 requires-python = ">=3.9"
 dependencies = []
+
+[tool.uv]
+package = false
